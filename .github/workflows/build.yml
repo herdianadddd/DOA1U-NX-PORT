@@ -6,10 +6,14 @@ jobs:
     container: devkitpro/devkita64:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: make -j4
-      - name: Upload
-        uses: actions/upload-artifact@v4
+      - name: Build NRO without Makefile
+        run: |
+          mkdir -p build
+          /opt/devkitpro/tools/bin/nrotool --help
+          aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I/opt/devkitpro/libnx/include -I/opt/devkitpro/portlibs/switch/include source/main.c -specs=/opt/devkitpro/libnx/switch.specs -L/opt/devkitpro/libnx/lib -L/opt/devkitpro/portlibs/switch/lib -lnx -o build/DOA1U-NX-PORT.elf
+          /opt/devkitpro/tools/bin/elf2nro build/DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=/opt/devkitpro/libnx/default_icon.jpg
+          ls -lh *.nro
+      - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
           path: "*.nro"
