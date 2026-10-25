@@ -12,50 +12,49 @@ jobs:
           cat > source/main.c << 'C'
           #include <switch.h>
           #include <stdio.h>
-
-          int main(int argc, char* argv[]){
+          #include <stdbool.h>
+          bool checkFile(const char* p){ FILE* f=fopen(p,"rb"); if(f){fclose(f); return true;} return false; }
+          int main(){
             consoleInit(NULL);
-            PadState pad;
-            padConfigureInput(1, HidNpadStyleSet_NpadStandard);
-            padInitializeDefault(&pad);
-
-            int x=10, y=10;
-            printf("\x1b[36mDOA1U-NX-PORT #23 FIXED\x1b[0m\n");
-            printf("\x1b[32mARENA MODE - Joystick to move\x1b[0m\n");
-            printf("A=Hit B=Kick PLUS=Exit\n\n");
-
+            PadState pad; padConfigureInput(1, HidNpadStyleSet_NpadStandard); padInitializeDefault(&pad);
+            int sel=0;
             while(appletMainLoop()){
-              padUpdate(&pad);
-              u64 kDown = padGetButtonsDown(&pad);
-              HidAnalogStickState pos = padGetStickPos(&pad, 0);
-
-              if(pos.x > 5000) x++;
-              if(pos.x < -5000) x--;
-              if(pos.y > 5000) y--;
-              if(pos.y < -5000) y++;
-
-              if(x<0) x=0; if(x>30) x=30;
-              if(y<0) y=0; if(y>15) y=15;
-
-              if(kDown & HidNpadButton_A) printf("\x1b[10;0H\x1b[31mPUNCH! at %d,%d   \x1b[0m", x,y);
-              if(kDown & HidNpadButton_B) printf("\x1b[10;0H\x1b[33mKICK! at %d,%d   \x1b[0m", x,y);
+              padUpdate(&pad); u64 kDown=padGetButtonsDown(&pad);
+              bool f_default=checkFile("sdmc:/doa1u/default.xbe");
+              bool f_doa1xbe=checkFile("sdmc:/doa1u/doa1.xbe") || checkFile("sdmc:/doa1u/DOA1.xbe") || checkFile("sdmc:/doa1u/doa1.XBE");
+              bool f_doa2xbe=checkFile("sdmc:/doa1u/DOA2.xbe") || checkFile("sdmc:/doa1u/doa2.xbe");
+              bool f_doa1data=checkFile("sdmc:/doa1u/DOA1/data/data.afs") || checkFile("sdmc:/doa1u/DOA1/ss_end.sfd");
+              consoleClear();
+              printf("\x1b[31;1m==============================\x1b[0m\n");
+              printf("\x1b[36;1m DOA ULTIMATE XBOX LAUNCHER #25\x1b[0m\n");
+              printf("\x1b[31;1m==============================\x1b[0m\n\n");
+              printf(" Path: sdmc:/doa1u/\n");
+              printf("  default.xbe 64KB [%s]\n", f_default?"\x1b[32mOK\x1b[0m":"\x1b[31mNO\x1b[0m");
+              printf("  doa1.xbe 4MB    [%s]\n", f_doa1xbe?"\x1b[32mOK - DOA1 GAME\x1b[0m":"\x1b[31mNO\x1b[0m");
+              printf("  DOA2.xbe 8MB    [%s]\n", f_doa2xbe?"\x1b[32mOK - DOA2 GAME\x1b[0m":"\x1b[31mNO\x1b[0m");
+              printf("  DOA1/data       [%s]\n\n", f_doa1data?"\x1b[32mOK\x1b[0m":"\x1b[31mNO\x1b[0m");
+              printf(" %s LAUNCH DOA1 ULTIMATE\n", sel==0?"\x1b[33m>\x1b[0m":" ");
+              printf(" %s LAUNCH DOA2 ULTIMATE\n", sel==1?"\x1b[33m>\x1b[0m":" ");
+              printf(" %s FILE CHECK\n", sel==2?"\x1b[33m>\x1b[0m":" ");
+              printf(" %s EXIT\n\n", sel==3?"\x1b[33m>\x1b[0m":" ");
+              if(f_default && f_doa1xbe) printf("\x1b[32;1mREADY! All files FOUND!\x1b[0m\n");
+              else printf("\x1b[37mCopy full ISO extract to sdmc:/doa1u/\x1b[0m\n");
+              printf("\n\x1b[32mUP/DOWN select, A confirm, PLUS exit\x1b[0m\n");
+              HidAnalogStickState s=padGetStickPos(&pad,0);
+              if(s.y>8000 || (kDown & HidNpadButton_AnyUp)) sel--;
+              if(s.y<-8000 || (kDown & HidNpadButton_AnyDown)) sel++;
+              if(sel<0) sel=3; if(sel>3) sel=0;
+              if(kDown & HidNpadButton_A) printf("\nLaunching...\n");
               if(kDown & HidNpadButton_Plus) break;
-
-              printf("\x1b[6;0HPlayer X:%d Y:%d Stick:(%d,%d)   ", x, y, pos.x, pos.y);
-              printf("\x1b[%d;%dH\x1b[35m@\x1b[0m", y+8, x);
-              printf("\x1b[22;0HUse LEFT STICK to move @");
-
               consoleUpdate(NULL);
             }
-            consoleExit(NULL);
-            return 0;
+            consoleExit(NULL); return 0;
           }
           C
           export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
           aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
           elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
           ls -lh *.nro
-          echo "BUILD #23 GREEN ARENA"
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
