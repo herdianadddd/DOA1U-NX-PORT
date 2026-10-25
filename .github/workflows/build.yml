@@ -6,32 +6,15 @@ jobs:
     container: devkitpro/devkita64:latest
     steps:
       - uses: actions/checkout@v4
-      - name: FORCE BUILD
+      - name: Build
         run: |
-          rm -rf source
           mkdir -p source
-          cat > source/main.c << 'ENDOFFILE'
-          #include <switch.h>
-          int main(int argc, char* argv[]){
-            consoleInit(NULL);
-            printf("DOA1U-NX-PORT BUILD #10\n");
-            printf("FIXED! File Main.c besar sudah dihapus\n");
-            printf("Copy folder DOA1 DOA2 Media kesini\n");
-            printf("Press + to exit\n");
-            while(appletMainLoop()){
-              hidScanInput();
-              if(hidKeysDown(CONTROLLER_P1_AUTO) & KEY_PLUS) break;
-              consoleUpdate(NULL);
-            }
-            consoleExit(NULL);
-            return 0;
-          }
-          ENDOFFILE
-          cat source/main.c
-          $DEVKITPRO/devkitA64/bin/aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include source/main.c -specs=$DEVKITPRO/libnx/switch.specs -L$DEVKITPRO/libnx/lib -lnx -o DOA1U.elf
-          $DEVKITPRO/tools/bin/elf2nro DOA1U.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
+          echo '#include <switch.h>
+          int main(){consoleInit(NULL);printf("DOA1U FIXED #11 - GREEN!\n");printf("Copy folder DOA1 DOA2 Media kesini\n");printf("Tekan PLUS 3 detik untuk exit\n");while(appletMainLoop()){consoleUpdate(NULL);}consoleExit(NULL);return 0;}' > source/main.c
+          export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
+          aarch64-none-elf-gcc -D__SWITCH__ -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o out.elf
+          elf2nro out.elf DOA1U-NX-PORT.nro
           ls -lh *.nro
-          echo OK
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
