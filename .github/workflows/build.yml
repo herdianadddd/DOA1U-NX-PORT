@@ -12,48 +12,131 @@ jobs:
           cat > source/main.c << 'C'
           #include <switch.h>
           #include <stdio.h>
-          #include <stdbool.h>
-          bool checkFile(const char* p){ FILE* f=fopen(p,"rb"); if(f){fclose(f); return true;} return false; }
+          #include <stdlib.h>
+          #include <time.h>
           int main(){
             consoleInit(NULL);
-            PadState pad; padConfigureInput(1, HidNpadStyleSet_NpadStandard); padInitializeDefault(&pad);
-            int sel=0;
+            PadState pad;
+            padConfigureInput(8, HidNpadStyleSet_NpadStandard);
+            padInitializeDefault(&pad);
+            
+            int p1_x=20, p2_x=60;
+            int p1_hp=100, p2_hp=100;
+            int p1_anim=0, p2_anim=0;
+            bool p1_attack=false, p2_attack=false;
+            int timer=0;
+            int winner=0;
+            const char* fighters[]={"KASUMI","AYANE","RYU","TINA","BASS","LEIFANG"};
+            int sel1=0, sel2=1;
+            int state=0; //0=select,1=fight,2=win
+            
+            srand(time(NULL));
+            
             while(appletMainLoop()){
-              padUpdate(&pad); u64 kDown=padGetButtonsDown(&pad);
-              bool f_default=checkFile("sdmc:/doa1u/default.xbe");
-              bool f_doa1xbe=checkFile("sdmc:/doa1u/doa1.xbe") || checkFile("sdmc:/doa1u/DOA1.xbe") || checkFile("sdmc:/doa1u/doa1.XBE");
-              bool f_doa2xbe=checkFile("sdmc:/doa1u/DOA2.xbe") || checkFile("sdmc:/doa1u/doa2.xbe");
-              bool f_doa1data=checkFile("sdmc:/doa1u/DOA1/data/data.afs") || checkFile("sdmc:/doa1u/DOA1/ss_end.sfd");
+              padUpdate(&pad);
+              u64 kDown=padGetButtonsDown(&pad);
+              u64 kHeld=padGetButtonsHeld(&pad);
+              
               consoleClear();
-              printf("\x1b[31;1m==============================\x1b[0m\n");
-              printf("\x1b[36;1m DOA ULTIMATE XBOX LAUNCHER #25\x1b[0m\n");
-              printf("\x1b[31;1m==============================\x1b[0m\n\n");
-              printf(" Path: sdmc:/doa1u/\n");
-              printf("  default.xbe 64KB [%s]\n", f_default?"\x1b[32mOK\x1b[0m":"\x1b[31mNO\x1b[0m");
-              printf("  doa1.xbe 4MB    [%s]\n", f_doa1xbe?"\x1b[32mOK - DOA1 GAME\x1b[0m":"\x1b[31mNO\x1b[0m");
-              printf("  DOA2.xbe 8MB    [%s]\n", f_doa2xbe?"\x1b[32mOK - DOA2 GAME\x1b[0m":"\x1b[31mNO\x1b[0m");
-              printf("  DOA1/data       [%s]\n\n", f_doa1data?"\x1b[32mOK\x1b[0m":"\x1b[31mNO\x1b[0m");
-              printf(" %s LAUNCH DOA1 ULTIMATE\n", sel==0?"\x1b[33m>\x1b[0m":" ");
-              printf(" %s LAUNCH DOA2 ULTIMATE\n", sel==1?"\x1b[33m>\x1b[0m":" ");
-              printf(" %s FILE CHECK\n", sel==2?"\x1b[33m>\x1b[0m":" ");
-              printf(" %s EXIT\n\n", sel==3?"\x1b[33m>\x1b[0m":" ");
-              if(f_default && f_doa1xbe) printf("\x1b[32;1mREADY! All files FOUND!\x1b[0m\n");
-              else printf("\x1b[37mCopy full ISO extract to sdmc:/doa1u/\x1b[0m\n");
-              printf("\n\x1b[32mUP/DOWN select, A confirm, PLUS exit\x1b[0m\n");
-              HidAnalogStickState s=padGetStickPos(&pad,0);
-              if(s.y>8000 || (kDown & HidNpadButton_AnyUp)) sel--;
-              if(s.y<-8000 || (kDown & HidNpadButton_AnyDown)) sel++;
-              if(sel<0) sel=3; if(sel>3) sel=0;
-              if(kDown & HidNpadButton_A) printf("\nLaunching...\n");
+              
+              if(state==0){
+                printf("\x1b[36;1m DOA ULTIMATE TRIBUTE #27 \x1b[0m\n");
+                printf("\x1b[31m=========================\x1b[0m\n\n");
+                printf(" P1 SELECT: \x1b[33m< %s >\x1b[0m\n", fighters[sel1]);
+                printf(" P2 SELECT: \x1b[31m< %s >\x1b[0m\n\n", fighters[sel2]);
+                printf(" \x1b[32mA = START FIGHT\x1b[0m\n");
+                printf(" \x1b[37mD-Pad LEFT/RIGHT = Change Fighter\x1b[0m\n");
+                printf(" \x1b[37mPLUS = Exit\x1b[0m\n\n");
+                printf("  P1: %s (Red)\n", fighters[sel1]);
+                printf("  P2: %s (Blue)\n", fighters[sel2]);
+                
+                if(kDown & HidNpadButton_AnyLeft) sel1=(sel1-1+6)%6;
+                if(kDown & HidNpadButton_AnyRight) sel1=(sel1+1)%6;
+                if(kDown & HidNpadButton_L) sel2=(sel2-1+6)%6;
+                if(kDown & HidNpadButton_R) sel2=(sel2+1)%6;
+                if(kDown & HidNpadButton_A) { state=1; p1_hp=100; p2_hp=100; p1_x=20; p2_x=60; }
+              }
+              else if(state==1){
+                // Input
+                if((kHeld & HidNpadButton_AnyLeft) && p1_x>2) p1_x--;
+                if((kHeld & HidNpadButton_AnyRight) && p1_x<35) p1_x++;
+                if(kDown & HidNpadButton_A) p1_attack=true;
+                
+                // Simple AI P2
+                if(abs(p2_x - p1_x) > 5){
+                  if(p2_x > p1_x) p2_x--;
+                  else p2_x++;
+                } else {
+                  if(rand()%20==0) p2_attack=true;
+                }
+                
+                // Combat
+                int dist = abs(p1_x - p2_x);
+                if(p1_attack && dist<8){
+                  p2_hp-=10; p2_anim=10;
+                  if(p2_hp<0) p2_hp=0;
+                }
+                if(p2_attack && dist<8){
+                  p1_hp-=10; p1_anim=10;
+                  if(p1_hp<0) p1_hp=0;
+                }
+                if(timer%5==0){ p1_attack=false; p2_attack=false; }
+                
+                // Draw Arena
+                printf("\x1b[36m %s vs %s \x1b[0m\n", fighters[sel1], fighters[sel2]);
+                printf(" P1 HP: \x1b[32m");
+                for(int i=0;i<p1_hp/5;i++) printf("|");
+                printf(" %d%%\x1b[0m\n", p1_hp);
+                printf(" P2 HP: \x1b[31m");
+                for(int i=0;i<p2_hp/5;i++) printf("|");
+                printf(" %d%%\x1b[0m\n\n", p2_hp);
+                
+                printf("\n");
+                for(int y=0;y<5;y++){
+                  for(int x=0;x<80;x++){
+                    if(y==2){
+                      if(x==p1_x) printf("%s", p1_attack?"\x1b[33m@\x1b[0m":"\x1b[32mO\x1b[0m");
+                      else if(x==p2_x) printf("%s", p2_attack?"\x1b[33m@\x1b[0m":"\x1b[31mX\x1b[0m");
+                      else if(x==p1_x+1 && p1_attack) printf("\x1b[33m-\x1b[0m");
+                      else if(x==p2_x-1 && p2_attack) printf("\x1b[33m-\x1b[0m");
+                      else if(x==40) printf("|");
+                      else printf(" ");
+                    } else {
+                      if(x==40) printf("|");
+                      else printf(" ");
+                    }
+                  }
+                  printf("\n");
+                }
+                printf("\n\x1b[33m%s %s\x1b[0m   vs   \x1b[31m%s %s\x1b[0m\n", 
+                  p1_anim?"HIT!":"", p1_attack?"PUNCH!":"", 
+                  p2_anim?"HIT!":"", p2_attack?"PUNCH!":"");
+                printf("\n\x1b[37mLEFT/RIGHT Move, A Punch, PLUS Exit\x1b[0m\n");
+                
+                if(p1_anim>0) p1_anim--;
+                if(p2_anim>0) p2_anim--;
+                timer++;
+                
+                if(p1_hp<=0){ winner=2; state=2; }
+                if(p2_hp<=0){ winner=1; state=2; }
+              }
+              else{
+                printf("\n\n\x1b[33;1m  K.O. ! WINNER: %s\x1b[0m\n\n", fighters[winner==1?sel1:sel2]);
+                printf("  \x1b[32mA = REMATCH, B = SELECT\x1b[0m\n");
+                if(kDown & HidNpadButton_A){ state=1; p1_hp=100; p2_hp=100; }
+                if(kDown & HidNpadButton_B) state=0;
+              }
+              
               if(kDown & HidNpadButton_Plus) break;
               consoleUpdate(NULL);
             }
-            consoleExit(NULL); return 0;
+            consoleExit(NULL);
+            return 0;
           }
           C
           export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
           aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
-          elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
+          elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg --name="DOA Tribute #27"
           ls -lh *.nro
       - uses: actions/upload-artifact@v4
         with:
