@@ -6,9 +6,21 @@ jobs:
     container: devkitpro/devkita64:latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Build NRO
-        run: make -j
-      - uses: actions/upload-artifact@v4
+        run: |
+          make -j$(nproc)
+          echo "=== LIST FILES ==="
+          ls -lh
+          find . -name "*.nro" -o -name "*.elf" | head -20
+          echo "=== END LIST ==="
+
+      - name: Upload NRO
+        uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-Switch
-          path: "*.nro"
+          path: |
+            **/*.nro
+            *.nro
+            *.elf
+          if-no-files-found: warn
