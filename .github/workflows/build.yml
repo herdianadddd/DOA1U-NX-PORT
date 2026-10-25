@@ -8,9 +8,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build
         run: |
+          rm -rf source
           mkdir -p source
-          echo '#include <switch.h>
-          int main(){consoleInit(NULL);printf("DOA1U FIXED #11 - GREEN!\n");printf("Copy folder DOA1 DOA2 Media kesini\n");printf("Tekan PLUS 3 detik untuk exit\n");while(appletMainLoop()){consoleUpdate(NULL);}consoleExit(NULL);return 0;}' > source/main.c
+          cat > source/main.c << 'ENDC'
+          #include <switch.h>
+          int main(int argc, char *argv[]) {
+              consoleInit(NULL);
+              printf("DOA1U-NX-PORT BUILD 12 FIXED\n");
+              printf("Copy DOA1 DOA2 Media ke sebelah NRO\n");
+              while(appletMainLoop()){
+                  consoleUpdate(NULL);
+              }
+              consoleExit(NULL);
+              return 0;
+          }
+          ENDC
+          cat source/main.c
           export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
           aarch64-none-elf-gcc -D__SWITCH__ -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o out.elf
           elf2nro out.elf DOA1U-NX-PORT.nro
