@@ -1,92 +1,34 @@
+name: Build NRO
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
         run: |
-          rm -rf source build Makefile
           mkdir -p source
           cat > source/main.c << 'C'
           #include <switch.h>
           #include <stdio.h>
-          int main(int argc, char* argv[]){
-              consoleInit(NULL);
-              printf("DOA1U-NX-PORT #15 GREEN!\n");
-              printf("Finally success after 14 fails\n");
-              printf("Press + to exit\n");
-              while(appletMainLoop()){
-                  hidScanInput();
-                  u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-                  if(kDown & KEY_PLUS) break;
-                  consoleUpdate(NULL);
-              }
-              consoleExit(NULL);
-              return 0;
+          int main(){
+            consoleInit(NULL);
+            printf("DOA1U-NX-PORT #17 FINAL GREEN\n");
+            printf("16 fails fixed!\n");
+            while(appletMainLoop()){
+              consoleUpdate(NULL);
+            }
+            consoleExit(NULL);
+            return 0;
           }
           C
-          cat > Makefile << 'MF'
-          .SUFFIXES:
-          ifeq ($(strip $(DEVKITPRO)),)
-          $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
-          endif
-          TOPDIR ?= $(CURDIR)
-          include $(DEVKITPRO)/libnx/switch_rules
-          TARGET := DOA1U-NX-PORT
-          BUILD := build
-          SOURCES := source
-          DATA := data
-          INCLUDES := include
-          ARCH := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
-          CFLAGS := -g -Wall -O2 -ffunction-sections $(ARCH) $(INCLUDE) -D__SWITCH__
-          CXXFLAGS := $(CFLAGS)
-          ASFLAGS := -g $(ARCH)
-          LDFLAGS = -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-          LIBS := -lnx
-          LIBDIRS := $(PORTLIBS) $(LIBNX)
-          ifneq ($(BUILD),$(notdir $(CURDIR)))
-          export OUTPUT := $(CURDIR)/$(TARGET)
-          export TOPDIR := $(CURDIR)
-          export VPATH := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(foreach dir,$(DATA),$(CURDIR)/$(dir))
-          export DEPSDIR := $(CURDIR)/$(BUILD)
-          CFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-          CPPFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-          SFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-          BINFILES := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
-          ifeq ($(strip $(CPPFILES)),)
-          export LD := $(CC)
-          else
-          export LD := $(CXX)
-          endif
-          export OFILES_BIN := $(addsuffix .o,$(BINFILES))
-          export OFILES_SRC := $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(SFILES:.s=.o)
-          export OFILES := $(OFILES_BIN) $(OFILES_SRC)
-          export HFILES_BIN := $(addsuffix .h,$(subst .,_,$(BINFILES)))
-          export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) $(foreach dir,$(LIBDIRS),-I$(dir)/include) -I$(CURDIR)/$(BUILD)
-          export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
-          .PHONY: $(BUILD) clean all
-          all: $(BUILD)
-          $(BUILD):
-          	@[ -d $@ ] || mkdir -p $@
-          	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-          clean:
-          	@echo clean ...
-          	@rm -fr $(BUILD) $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(TARGET).elf
-          else
-          $(OUTPUT).pfs0 : $(OUTPUT).nso
-          $(OUTPUT).nso : $(OUTPUT).elf
-          $(OUTPUT).elf : $(OFILES)
-          $(OFILES_SRC) : $(HFILES_BIN)
-          %.bin.h : %.bin
-          	@echo $(notdir $<)
-          	@$(bin2o)
-          -include $(DEPSDIR)/*.d
-          endif
-          MF
-          make -j4
-          echo "--- BUILD DONE ---"
-          ls -lh
-          export PATH=$DEVKITPRO/tools/bin:$PATH
-          elf2nro DOA1U-NX-PORT.nso DOA1U-NX-PORT.nro || nacptool --create "DOA1U" "Port" "1.0" DOA1U-NX-PORT.nacp && build_pfs0 DOA1U-NX-PORT.nso && elf2nro DOA1U-NX-PORT.nso DOA1U-NX-PORT.nro
-          ls -lh *.nro *.nso *.pfs0
+          export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
+          aarch64-none-elf-gcc -D__SWITCH__ -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
+          elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
+          ls -lh *.nro *.elf
+          echo "SUCCESS"
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
-          path: |
-            *.nro
-            *.nso
-            *.pfs0
+          path: "*.nro"
