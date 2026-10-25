@@ -1,8 +1,0 @@
-cmake_minimum_required(VERSION 3.13)
-project(DOA1U-NX-PORT C CXX)
-file(GLOB SOURCES "src/*.cpp")
-add_executable(${PROJECT_NAME}.elf ${SOURCES})
-target_include_directories(${PROJECT_NAME}.elf PRIVATE src $ENV{DEVKITPRO}/libnx/include)
-target_link_directories(${PROJECT_NAME}.elf PRIVATE $ENV{DEVKITPRO}/libnx/lib)
-target_link_libraries(${PROJECT_NAME}.elf deko3d nx)
-add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD COMMAND $ENV{DEVKITPRO}/tools/bin/elf2nro.exe $<TARGET_FILE:${PROJECT_NAME}.elf> ${CMAKE_BINARY_DIR}/DOA1U-NX-PORT.nro)
