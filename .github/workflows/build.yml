@@ -1,12 +1,3 @@
-name: Build NRO
-on: [push, workflow_dispatch]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    container: devkitpro/devkita64:latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build with auto Makefile
         run: |
           rm -rf source build Makefile
           mkdir -p source
@@ -15,9 +6,15 @@ jobs:
           #include <stdio.h>
           int main(int argc, char* argv[]){
               consoleInit(NULL);
-              printf("DOA1U-NX-PORT #14 GREEN\n");
-              printf("Build success after 13 fails!\n");
-              while(appletMainLoop()){ consoleUpdate(NULL); }
+              printf("DOA1U-NX-PORT #15 GREEN!\n");
+              printf("Finally success after 14 fails\n");
+              printf("Press + to exit\n");
+              while(appletMainLoop()){
+                  hidScanInput();
+                  u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+                  if(kDown & KEY_PLUS) break;
+                  consoleUpdate(NULL);
+              }
               consoleExit(NULL);
               return 0;
           }
@@ -81,8 +78,15 @@ jobs:
           endif
           MF
           make -j4
-          ls -lh *.nro
+          echo "--- BUILD DONE ---"
+          ls -lh
+          export PATH=$DEVKITPRO/tools/bin:$PATH
+          elf2nro DOA1U-NX-PORT.nso DOA1U-NX-PORT.nro || nacptool --create "DOA1U" "Port" "1.0" DOA1U-NX-PORT.nacp && build_pfs0 DOA1U-NX-PORT.nso && elf2nro DOA1U-NX-PORT.nso DOA1U-NX-PORT.nro
+          ls -lh *.nro *.nso *.pfs0
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
-          path: "*.nro"
+          path: |
+            *.nro
+            *.nso
+            *.pfs0
