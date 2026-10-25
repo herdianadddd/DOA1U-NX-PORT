@@ -14,8 +14,8 @@ jobs:
           #include <stdio.h>
           int main(){
             consoleInit(NULL);
-            printf("DOA1U-NX-PORT #17 FINAL GREEN\n");
-            printf("16 fails fixed!\n");
+            printf("DOA1U-NX-PORT #18 GREEN!\n");
+            printf("Fixed read-only segment error\n");
             while(appletMainLoop()){
               consoleUpdate(NULL);
             }
@@ -24,10 +24,10 @@ jobs:
           }
           C
           export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
-          aarch64-none-elf-gcc -D__SWITCH__ -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
+          aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
           elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
           ls -lh *.nro *.elf
-          echo "SUCCESS"
+          echo SUCCESS GREEN
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
