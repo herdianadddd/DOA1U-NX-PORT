@@ -15,15 +15,19 @@ jobs:
 
           int main(int argc, char* argv[]){
             consoleInit(NULL);
-            printf("\x1b[31mDOA1U-NX-PORT #20\x1b[0m\n");
-            printf("A = Hit  B = Kick\n");
-            printf("X = Punch Y = Throw\n");
-            printf("\nPLUS to exit\n\n");
+            PadState pad;
+            padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+            padInitializeDefault(&pad);
+
+            printf("\x1b[31mDOA1U-NX-PORT #21 GREEN\x1b[0m\n");
+            printf("API BARU - LIBNX 4.x\n");
+            printf("A=Hit B=Kick X=Punch Y=Throw\n");
+            printf("PLUS to exit\n\n");
 
             int hits=0;
             while(appletMainLoop()){
-              hidScanInput();
-              u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+              padUpdate(&pad);
+              u64 kDown = padGetButtonsDown(&pad);
               
               if(kDown & HidNpadButton_A){ hits++; printf("HIT! %d\n", hits); }
               if(kDown & HidNpadButton_B){ printf("KICK!\n"); }
@@ -41,7 +45,7 @@ jobs:
           aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
           elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
           ls -lh *.nro
-          echo "BUILD #20 GREEN FIXED KEY_"
+          echo "BUILD #21 GREEN NEW API"
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
