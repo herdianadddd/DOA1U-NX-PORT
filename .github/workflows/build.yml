@@ -12,19 +12,18 @@ jobs:
           mkdir -p source
           cat > source/main.c << 'C'
           #include <switch.h>
+          #include <stdio.h>
           int main(int argc, char* argv[]){
               consoleInit(NULL);
-              printf("DOA1U-NX-PORT #13 GREEN\n");
-              printf("Build finally success!\n");
-              while(appletMainLoop()) consoleUpdate(NULL);
+              printf("DOA1U-NX-PORT #14 GREEN\n");
+              printf("Build success after 13 fails!\n");
+              while(appletMainLoop()){ consoleUpdate(NULL); }
               consoleExit(NULL);
               return 0;
           }
           C
           cat > Makefile << 'MF'
-          #---------------------------------------------------------------------------------
           .SUFFIXES:
-          #---------------------------------------------------------------------------------
           ifeq ($(strip $(DEVKITPRO)),)
           $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
           endif
@@ -81,7 +80,6 @@ jobs:
           -include $(DEPSDIR)/*.d
           endif
           MF
-          cat Makefile
           make -j4
           ls -lh *.nro
       - uses: actions/upload-artifact@v4
