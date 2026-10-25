@@ -12,11 +12,25 @@ jobs:
           cat > source/main.c << 'C'
           #include <switch.h>
           #include <stdio.h>
-          int main(){
+
+          int main(int argc, char* argv[]){
             consoleInit(NULL);
-            printf("DOA1U-NX-PORT #18 GREEN!\n");
-            printf("Fixed read-only segment error\n");
+            printf("\x1b[31mDOA1U-NX-PORT #19\x1b[0m\n");
+            printf("\x1b[32mA = Hit  B = Kick\x1b[0m\n");
+            printf("\x1b[33mX = Punch Y = Throw\x1b[0m\n");
+            printf("\nPress PLUS to exit\n\n");
+
+            int hits=0;
             while(appletMainLoop()){
+              hidScanInput();
+              u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+              
+              if(kDown & KEY_A){ hits++; printf("HIT! %d\n", hits); }
+              if(kDown & KEY_B){ printf("KICK!\n"); }
+              if(kDown & KEY_X){ printf("PUNCH!\n"); }
+              if(kDown & KEY_Y){ printf("THROW!\n"); }
+              if(kDown & KEY_PLUS) break;
+
               consoleUpdate(NULL);
             }
             consoleExit(NULL);
@@ -25,9 +39,9 @@ jobs:
           C
           export PATH=$DEVKITPRO/tools/bin:$DEVKITPRO/devkitA64/bin:$PATH
           aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
-          elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
-          ls -lh *.nro *.elf
-          echo SUCCESS GREEN
+          elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg --nacp=DOA1U-NX-PORT.nacp || elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro
+          ls -lh *.nro
+          echo "BUILD #19 GREEN"
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
