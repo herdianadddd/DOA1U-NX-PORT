@@ -19,21 +19,31 @@ jobs:
             padConfigureInput(1, HidNpadStyleSet_NpadStandard);
             padInitializeDefault(&pad);
 
-            printf("\x1b[31mDOA1U-NX-PORT #21 GREEN\x1b[0m\n");
-            printf("API BARU - LIBNX 4.x\n");
-            printf("A=Hit B=Kick X=Punch Y=Throw\n");
-            printf("PLUS to exit\n\n");
+            int x=10, y=10;
+            printf("\x1b[36mDOA1U-NX-PORT #22\x1b[0m\n");
+            printf("\x1b[32mARENA MODE - Joystick to move\x1b[0m\n");
+            printf("A=Hit B=Kick PLUS=Exit\n\n");
 
-            int hits=0;
             while(appletMainLoop()){
               padUpdate(&pad);
               u64 kDown = padGetButtonsDown(&pad);
-              
-              if(kDown & HidNpadButton_A){ hits++; printf("HIT! %d\n", hits); }
-              if(kDown & HidNpadButton_B){ printf("KICK!\n"); }
-              if(kDown & HidNpadButton_X){ printf("PUNCH!\n"); }
-              if(kDown & HidNpadButton_Y){ printf("THROW!\n"); }
+              HidAnalogStickPosition pos = padGetStickPos(&pad, 0);
+
+              if(pos.x > 5000) x++;
+              if(pos.x < -5000) x--;
+              if(pos.y > 5000) y--;
+              if(pos.y < -5000) y++;
+
+              if(x<0) x=0; if(x>30) x=30;
+              if(y<0) y=0; if(y>15) y=15;
+
+              if(kDown & HidNpadButton_A) printf("\x1b[%d;%dH\x1b[31mPUNCH!\x1b[0m", y+5, x);
+              if(kDown & HidNpadButton_B) printf("\x1b[%d;%dH\x1b[33mKICK!\x1b[0m", y+5, x);
               if(kDown & HidNpadButton_Plus) break;
+
+              printf("\x1b[6;0HPlayer X:%d Y:%d Pos:(%d,%d)   ", x, y, pos.x, pos.y);
+              printf("\x1b[%d;%dH\x1b[35m@\x1b[0m", y+8, x);
+              printf("\x1b[22;0HUse LEFT STICK to move @ around");
 
               consoleUpdate(NULL);
             }
@@ -45,7 +55,7 @@ jobs:
           aarch64-none-elf-gcc -D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE -g -O2 -I$DEVKITPRO/libnx/include -specs=$DEVKITPRO/libnx/switch.specs source/main.c -L$DEVKITPRO/libnx/lib -lnx -o DOA1U-NX-PORT.elf
           elf2nro DOA1U-NX-PORT.elf DOA1U-NX-PORT.nro --icon=$DEVKITPRO/libnx/default_icon.jpg
           ls -lh *.nro
-          echo "BUILD #21 GREEN NEW API"
+          echo "BUILD #22 ARENA"
       - uses: actions/upload-artifact@v4
         with:
           name: DOA1U-NX-PORT-NRO
